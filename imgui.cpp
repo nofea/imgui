@@ -3831,14 +3831,14 @@ void ImGui::GcAwakeTransientWindowBuffers(ImGuiWindow* window)
     window->MemoryDrawListIdxCapacity = window->MemoryDrawListVtxCapacity = 0;
 }
 
-void ImGui::SetActiveID(ImGuiID id, ImGuiWindow* window)
+/*void ImGui::SetActiveID(ImGuiID id, ImGuiWindow* window)
 {
     ImGuiContext& g = *GImGui;
 
 
-    for (int i = 0; i < DC.Layouts.Data.Size; i++)
+    for (int i = 0; i < window->DC.Layouts.Data.Size; i++)
     {
-        ImGuiLayout* layout = (ImGuiLayout*)DC.Layouts.Data[i].val_p;
+        ImGuiLayout* layout = (ImGuiLayout*)window->DC.Layouts.Data[i].val_p;
         IM_DELETE(layout);
     }
     // While most behaved code would make an effort to not steal active id during window move/drag operations,
@@ -3883,6 +3883,41 @@ void ImGui::SetActiveID(ImGuiID id, ImGuiWindow* window)
 #ifndef IMGUI_DISABLE_OBSOLETE_KEYIO
     g.ActiveIdUsingNavInputMask = 0x00;
 #endif
+}*/
+
+void ImGui::SetActiveID(ImGuiID id, ImGuiWindow* window)
+{
+    ImGuiContext& g = *GImGui;
+    g.ActiveIdIsJustActivated = (g.ActiveId != id);
+    if (g.ActiveIdIsJustActivated)
+    {
+        g.ActiveIdTimer = 0.0f;
+        g.ActiveIdHasBeenPressedBefore = false;
+        g.ActiveIdHasBeenEditedBefore = false;
+        g.ActiveIdMouseButton = -1;
+        if (id != 0)
+        {
+            g.LastActiveId = id;
+            g.LastActiveIdTimer = 0.0f;
+        }
+    }
+    g.ActiveId = id;
+    g.ActiveIdAllowOverlap = false;
+    g.ActiveIdNoClearOnFocusLoss = false;
+    g.ActiveIdWindow = window;
+    g.ActiveIdHasBeenEditedThisFrame = false;
+    if (id)
+    {
+        g.ActiveIdIsAlive = id;
+        g.ActiveIdSource = (g.NavActivateId == id || g.NavActivateInputId == id || g.NavJustMovedToId == id) ? (ImGuiInputSource)ImGuiInputSource_Nav : ImGuiInputSource_Mouse;
+    }
+
+    // Clear declaration of inputs claimed by the widget
+    // (Please note that this is WIP and not all keys/inputs are thoroughly declared by all widgets yet)
+    g.ActiveIdUsingMouseWheel = false;
+    g.ActiveIdUsingNavDirMask = 0x00;
+    g.ActiveIdUsingNavInputMask = 0x00;
+    g.ActiveIdUsingKeyInputMask.ClearAllBits();
 }
 
 void ImGui::ClearActiveID()
